@@ -1,0 +1,191 @@
+#include<iostream.h>
+#include <conio.h>
+#include <string.h>
+#include<stdio.h>
+#include<ctype.h>
+
+typedef int bool;
+#define true 1
+#define false 0
+
+class Question {
+public:
+    char question[256];
+    char options[4][256];
+    char correctOption;
+    Question* next;
+
+    Question(const char* q, const char* opt[], char correct) {
+	strcpy(question, q);
+	for (int i = 0; i < 4; ++i) {
+	    strcpy(options[i], opt[i]);
+	}
+	correctOption = correct;
+	next = NULL;
+    }
+};
+
+class Queue {
+private:
+    Question* front;
+    Question* rear;
+
+public:
+    Queue() {
+	front = NULL;
+	rear = NULL;
+    }
+
+    void enqueue(const char* q, const char* opt[], char correct) {
+	Question* newQuestion = new Question(q, opt, correct);
+	if (rear == NULL) {
+	    front = rear = newQuestion;
+	} else {
+	    rear->next = newQuestion;
+	    rear = newQuestion;
+	}
+    }
+
+    void dequeue() {
+	if (front == NULL) {
+	    cout << "Queue is empty!" << endl;
+	    return;
+	}
+	Question* temp = front;
+	front = front->next;
+	if (front == NULL) {
+	    rear = NULL;
+	}
+	delete temp;
+    }
+
+    Question* getFront() {
+	return front;
+    }
+
+    bool isEmpty() {
+	return front == NULL;
+    }
+
+    void display() {
+	if (isEmpty()) {
+	    cout << "Queue is empty!" << endl;
+	    return;
+	}
+	Question* temp = front;
+	while (temp != NULL) {
+	    cout << temp->question << endl;
+	    for (int i = 0; i < 4; ++i) {
+		cout << temp->options[i] << endl;
+	    }
+	    temp = temp->next;
+	}
+    }
+};
+
+class KBCGame {
+private:
+    Queue questions;
+    int totalAmount;
+    bool lifelineUsed;
+    bool switchUsed;
+
+public:
+    KBCGame() {
+	totalAmount = 0;
+	lifelineUsed = false;
+	switchUsed = false;
+    }
+
+    void addQuestion(const char* q, const char* opt[], char correct) {
+	questions.enqueue(q, opt, correct);
+    }
+
+    void displayWelcomeMessage() {
+	cout << "Welcome to Kaun Banega Crorepati!" << endl;
+	cout << "Answer the questions correctly to win prizes." << endl;
+    }
+
+    void displayQuestion(Question* q)
+    {
+	cout << q->question << endl;
+	for (int i = 0; i < 4; ++i) {
+	    cout << q->options[i] << endl;
+	}
+	cout << "Enter your answer (A, B, C, or D) or type 'L' for 50-50 lifeline or 'S' to switch the question: ";
+    }
+
+    bool checkAnswer(char userAnswer, char correctAnswer) {
+	return toupper(userAnswer) == correctAnswer;
+    }
+
+    void useLifeline(Question* q) {
+	cout << "50-50 Lifeline used! Two incorrect options will be removed." << endl;
+	int removed = 0;
+	for (int i = 0; i < 4; ++i) {
+	    if (q->options[i][0] != q->correctOption && removed < 2) {
+		cout << q->options[i] << " (Removed)" << endl;
+		removed++;
+	    } else {
+		cout << q->options[i] << endl;
+	    }
+	}
+    }
+
+    void playGame() {
+	displayWelcomeMessage();
+
+	while (!questions.isEmpty()) {
+	    Question* current = questions.getFront();
+	    displayQuestion(current);
+	    char userAnswer;
+	    cin >> userAnswer;
+
+	    if (toupper(userAnswer) == 'L' && !lifelineUsed) {
+		useLifeline(current);
+		lifelineUsed = true;
+		cout << "Enter your answer (A, B, C, or D): ";
+		cin >> userAnswer;
+	    } else if (toupper(userAnswer) == 'S' && !switchUsed) {
+		switchUsed = true;
+		clrscr();
+		cout << "Switch the Question lifeline used! Here is a new question." << endl;
+		questions.dequeue();
+		if (questions.isEmpty()) break;
+		current = questions.getFront();
+		displayQuestion(current);
+		cin >> userAnswer;
+	    }
+
+	    if (checkAnswer(userAnswer, current->correctOption)) {
+		totalAmount += 5000; // Increment prize amount
+		cout << "Correct! You have won Rs. " << totalAmount << endl;
+	    } else {
+		cout << "Incorrect! The correct answer was " << current->correctOption << endl;
+		break;
+	    }
+	    clrscr();
+	    questions.dequeue();
+	}
+
+	cout << "You have won a total of Rs. " << totalAmount << endl;
+    }
+};
+
+int main()
+{    clrscr();
+    KBCGame game;
+
+    const char* options1[] = {"A. Ganesha", "B. Hanuman", "C. Indra", "D. Agni"};
+    game.addQuestion("Which God is known as Gauri Nandan?", options1, 'A');
+
+    const char* options2[] = {"A. Jaipur", "B. Venus", "C. Jupiter", "D. Saturn"};
+    game.addQuestion("Which city is known as Pink city of India?", options2, 'A');
+
+    const char* options3[] = {"A. Mahatma Gandhi", "B. Rabindranath Tagore", "C. Chetan Bhagat", "D.Dr. Bhim Rao Ambedhkar"};
+    game.addQuestion("Who wrote India's National Anthem?", options3, 'B');
+
+    game.playGame();
+    getch();
+    return 0;
+}
